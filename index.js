@@ -16,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => res.send('API funcionando'));
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
