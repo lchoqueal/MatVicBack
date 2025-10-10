@@ -3,6 +3,7 @@ const router = express.Router();
 const { processSale } = require('../controllers/salesController');
 const authMiddleware = require('../middleware/authMiddleware');
 const { getSalesByDay, getSalesByMonth } = require('../controllers/salesController');
+const { getRecentSales } = require('../controllers/salesController');
 
 // Procesar venta (requiere autenticación)
 router.post('/', authMiddleware, processSale);
@@ -12,5 +13,8 @@ router.get('/byday/:date', authMiddleware, getSalesByDay);
 
 // Obtener ventas por mes (requiere autenticación)
 router.get('/bymonth/:month', authMiddleware, getSalesByMonth);
+
+// Obtener últimas ventas (requiere autenticación)
+router.get('/recent', authMiddleware, getRecentSales);
 
 module.exports = router;
