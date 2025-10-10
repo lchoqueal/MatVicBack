@@ -1,4 +1,3 @@
-// url: (local file, not a public GitHub repo)
 const db = require('../config/db');
 const pool = require('../config/db');
 
@@ -34,15 +33,15 @@ async function processSale(req, res) {
 
 // Ventas por día
 async function getSalesByDay(req, res) {
-  const { date } = req.params; // Espera formato YYYY-MM-DD
-  const { local } = req.query; // Opcional: filtrar por local
+  const { date } = req.params; // formato YYYY-MM-DD
+  const { local } = req.query; // opcional
   try {
     const queryBase = `
       SELECT
         b.fecha_emision,
         b.total,
         b.metodo_pago,
-        COALESCE(u_cliente.nombre, '') AS cliente,
+        COALESCE(u_cliente.nombres, '') || ' ' || COALESCE(u_cliente.apellidos, '') AS cliente,
         COALESCE(l.nombre, '') AS local,
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
@@ -54,7 +53,7 @@ async function getSalesByDay(req, res) {
       JOIN producto p ON db.id_producto = p.id_producto
       WHERE b.fecha_emision = $1
       ${local ? 'AND l.id_local = $2' : ''}
-      GROUP BY b.id_boleta, u_cliente.nombre, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      GROUP BY b.id_boleta, u_cliente.nombres, u_cliente.apellidos, l.nombre, b.fecha_emision, b.total, b.metodo_pago
       ORDER BY b.fecha_emision, b.id_boleta
     `;
     const params = local ? [date, local] : [date];
@@ -78,15 +77,15 @@ async function getSalesByDay(req, res) {
 
 // Ventas por mes
 async function getSalesByMonth(req, res) {
-  const { month } = req.params; // Espera formato YYYY-MM
-  const { local } = req.query; // Opcional: filtrar por local
+  const { month } = req.params; // formato YYYY-MM
+  const { local } = req.query;
   try {
     const queryBase = `
       SELECT
         b.fecha_emision,
         b.total,
         b.metodo_pago,
-        COALESCE(u_cliente.nombre, '') AS cliente,
+        COALESCE(u_cliente.nombres, '') || ' ' || COALESCE(u_cliente.apellidos, '') AS cliente,
         COALESCE(l.nombre, '') AS local,
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
@@ -98,7 +97,7 @@ async function getSalesByMonth(req, res) {
       JOIN producto p ON db.id_producto = p.id_producto
       WHERE to_char(b.fecha_emision, 'YYYY-MM') = $1
       ${local ? 'AND l.id_local = $2' : ''}
-      GROUP BY b.id_boleta, u_cliente.nombre, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      GROUP BY b.id_boleta, u_cliente.nombres, u_cliente.apellidos, l.nombre, b.fecha_emision, b.total, b.metodo_pago
       ORDER BY b.fecha_emision, b.id_boleta
     `;
     const params = local ? [month, local] : [month];
@@ -120,7 +119,7 @@ async function getSalesByMonth(req, res) {
   }
 }
 
-// Ventas recientes (últimas N boletas)
+// Ventas recientes
 async function getRecentSales(req, res) {
   const limit = parseInt(req.query.limit) || 10;
   try {
@@ -129,7 +128,7 @@ async function getRecentSales(req, res) {
         b.fecha_emision,
         b.total,
         b.metodo_pago,
-        COALESCE(u_cliente.nombre, '') AS cliente,
+        COALESCE(u_cliente.nombres, '') || ' ' || COALESCE(u_cliente.apellidos, '') AS cliente,
         COALESCE(l.nombre, '') AS local,
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
@@ -139,7 +138,7 @@ async function getRecentSales(req, res) {
       LEFT JOIN locale l ON e.id_local = l.id_local
       JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
       JOIN producto p ON db.id_producto = p.id_producto
-      GROUP BY b.id_boleta, u_cliente.nombre, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      GROUP BY b.id_boleta, u_cliente.nombres, u_cliente.apellidos, l.nombre, b.fecha_emision, b.total, b.metodo_pago
       ORDER BY b.fecha_emision DESC, b.id_boleta DESC
       LIMIT $1
     `;
