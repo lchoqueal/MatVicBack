@@ -12,6 +12,7 @@ const authController = {
       console.log('Intento login:', username, password, user && user.contrasena);
       if (!user) return res.status(401).json({ error: 'Invalid credentials' });
       const match = await bcrypt.compare(password, user.contrasena || '');
+      console.log('Resultado bcrypt.compare:', match);
       if (!match) return res.status(401).json({ error: 'Invalid credentials' });
       const token = jwt.sign({ id: user.id_usuario, username: user.name_user }, process.env.JWT_SECRET || 'secret', {
         expiresIn: '8h',
@@ -24,4 +25,5 @@ const authController = {
 };
 
 module.exports = authController;
+
 
