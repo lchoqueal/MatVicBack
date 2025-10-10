@@ -41,8 +41,8 @@ async function getSalesByDay(req, res) {
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
       LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
-      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_empleado
-      LEFT JOIN locale l ON e.id_locale_empleado = l.id_local
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_usuario_empleado
+      LEFT JOIN locale l ON e.id_local = l.id_local
       JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
       JOIN producto p ON db.id_producto = p.id_producto
       WHERE b.fecha_emision = $1
@@ -78,8 +78,8 @@ async function getSalesByMonth(req, res) {
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
       LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
-      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_empleado
-      LEFT JOIN locale l ON e.id_locale_empleado = l.id_local
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_usuario_empleado
+      LEFT JOIN locale l ON e.id_local = l.id_local
       JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
       JOIN producto p ON db.id_producto = p.id_producto
       WHERE to_char(b.fecha_emision, 'YYYY-MM') = $1
@@ -115,8 +115,8 @@ async function getRecentSales(req, res) {
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
       LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
-      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_empleado
-      LEFT JOIN locale l ON e.id_locale_empleado = l.id_local
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_usuario_empleado
+      LEFT JOIN locale l ON e.id_local = l.id_local
       JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
       JOIN producto p ON db.id_producto = p.id_producto
       GROUP BY b.id_boleta, c.nombre_cliente, l.nombre, b.fecha_emision, b.total, b.metodo_pago
