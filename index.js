@@ -13,7 +13,7 @@ const { startListener } = require('./services/dbListener');
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173','https://mat-vic-front.vercel.app','mat-vic-front-git-main-lchoqueals-projects.vercel.app'],
+  origin: ['http://localhost:5173','https://mat-vic-front.vercel.app','https://mat-vic-front-git-main-lchoqueals-projects.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
