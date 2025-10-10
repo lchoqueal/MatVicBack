@@ -9,6 +9,7 @@ const authController = {
     try {
       const { rows } = await pool.query('SELECT * FROM usuario WHERE name_user = $1 LIMIT 1', [username]);
       const user = rows[0];
+      console.log('Intento login:', username, password, user && user.contrasena);
       if (!user) return res.status(401).json({ error: 'Invalid credentials' });
       const match = await bcrypt.compare(password, user.contrasena || '');
       if (!match) return res.status(401).json({ error: 'Invalid credentials' });
@@ -23,3 +24,4 @@ const authController = {
 };
 
 module.exports = authController;
+
