@@ -43,18 +43,20 @@ async function getSalesByDay(req, res) {
         b.total,
         b.metodo_pago,
         COALESCE(u_cliente.nombres, '') || ' ' || COALESCE(u_cliente.apellidos, '') AS cliente,
+        COALESCE(u_empleado.nombres, '') || ' ' || COALESCE(u_empleado.apellidos, '') AS empleado,
         COALESCE(l.nombre, '') AS local,
         array_agg(db.cantidad || 'x ' || p.nombre) AS productos
       FROM boleta b
       LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
       LEFT JOIN usuario u_cliente ON c.id_usuario_cliente = u_cliente.id_usuario
       LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_usuario_empleado
+      LEFT JOIN usuario u_empleado ON e.id_usuario_empleado = u_empleado.id_usuario
       LEFT JOIN locale l ON e.id_local = l.id_local
       JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
       JOIN producto p ON db.id_producto = p.id_producto
       WHERE b.fecha_emision = $1
       ${local ? 'AND l.id_local = $2' : ''}
-      GROUP BY b.id_boleta, u_cliente.nombres, u_cliente.apellidos, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      GROUP BY b.id_boleta, u_cliente.nombres, u_cliente.apellidos, u_empleado.nombres, u_empleado.apellidos, l.nombre, b.fecha_emision, b.total, b.metodo_pago
       ORDER BY b.fecha_emision, b.id_boleta
     `;
     const params = local ? [date, local] : [date];
@@ -64,6 +66,7 @@ async function getSalesByDay(req, res) {
     const result = rows.map(row => ({
       fecha_emision: row.fecha_emision,
       cliente: row.cliente,
+      empleado: row.empleado,
       local: row.local,
       productos: row.productos,
       total: row.total,
