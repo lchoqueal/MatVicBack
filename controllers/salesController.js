@@ -26,4 +26,82 @@ async function processSale(req, res) {
   }
 }
 
-module.exports = { processSale };
+async function getSalesByDay(req, res) {
+  const { date } = req.params; // Espera formato YYYY-MM-DD
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        b.fecha_emision,
+        b.total,
+        b.metodo_pago,
+        COALESCE(c.nombre_cliente, '') AS cliente,
+        COALESCE(l.nombre, '') AS local,
+        array_agg(db.cantidad || 'x ' || p.nombre) AS productos
+      FROM boleta b
+      LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_empleado
+      LEFT JOIN locale l ON e.id_locale_empleado = l.id_local
+      JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
+      JOIN producto p ON db.id_producto = p.id_producto
+      WHERE b.fecha_emision = $1
+      GROUP BY b.id_boleta, c.nombre_cliente, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      ORDER BY b.fecha_emision, b.id_boleta
+    `, [date]);
+
+    const result = rows.map(row => ({
+      fecha_emision: row.fecha_emision,
+      cliente: row.cliente,
+      local: row.local,
+      productos: row.productos,
+      total: row.total,
+      metodo_pago: row.metodo_pago,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function getSalesByMonth(req, res) {
+  const { month } = req.params; // Espera formato YYYY-MM
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        b.fecha_emision,
+        b.total,
+        b.metodo_pago,
+        COALESCE(c.nombre_cliente, '') AS cliente,
+        COALESCE(l.nombre, '') AS local,
+        array_agg(db.cantidad || 'x ' || p.nombre) AS productos
+      FROM boleta b
+      LEFT JOIN cliente c ON b.id_cliente_boleta = c.id_usuario_cliente
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_empleado
+      LEFT JOIN locale l ON e.id_locale_empleado = l.id_local
+      JOIN detalle_boleta db ON b.id_boleta = db.id_boleta
+      JOIN producto p ON db.id_producto = p.id_producto
+      WHERE to_char(b.fecha_emision, 'YYYY-MM') = $1
+      GROUP BY b.id_boleta, c.nombre_cliente, l.nombre, b.fecha_emision, b.total, b.metodo_pago
+      ORDER BY b.fecha_emision, b.id_boleta
+    `, [month]);
+
+    const result = rows.map(row => ({
+      fecha_emision: row.fecha_emision,
+      cliente: row.cliente,
+      local: row.local,
+      productos: row.productos,
+      total: row.total,
+      metodo_pago: row.metodo_pago,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { 
+  processSale,
+  getSalesByDay,
+  getSalesByMonth 
+};
