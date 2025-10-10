@@ -17,4 +17,10 @@ router.get('/bymonth/:month', authMiddleware, getSalesByMonth);
 // Obtener últimas ventas (requiere autenticación)
 router.get('/recent', authMiddleware, getRecentSales);
 
+// Estadísticas avanzadas
+router.get('/stats/monthly-history', salesController.getMonthlyHistory);
+
+// Comparación entre locales
+router.get('/stats/comparison', salesController.getStoresComparison);
+
 module.exports = router;

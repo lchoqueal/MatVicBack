@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const pool = require('../config/db');
+const { get } = require('../routes/salesRoutes');
 
 // Procesar venta (transacción)
 async function processSale(req, res) {
@@ -161,9 +162,136 @@ async function getRecentSales(req, res) {
   }
 }
 
+async function getStoresComparison(req, res) {
+  try {
+    // Obtener fecha actual en formato YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Ventas de hoy por local
+    const todayQuery = `
+      SELECT 
+        l.id_local,
+        l.nombre as nombre_local,
+        COUNT(b.id_boleta) as ventas_hoy_count,
+        COALESCE(SUM(b.total), 0) as ventas_hoy_total
+      FROM locale l
+      LEFT JOIN empleado e ON e.id_local = l.id_local
+      LEFT JOIN boleta b ON b.id_empleado_boleta = e.id_usuario_empleado 
+        AND DATE(b.fecha_emision) = $1
+      GROUP BY l.id_local, l.nombre
+      ORDER BY l.id_local
+    `;
+    
+    // Total de productos (global, ya que no hay relación producto-local)
+    const productsQuery = `
+      SELECT COUNT(*) as total_productos FROM producto
+    `;
+    
+    // Stock bajo por local (ajustar si tienes relación producto-local)
+    const stockQuery = `
+      SELECT COUNT(*) as productos_stock_bajo 
+      FROM producto 
+      WHERE stock <= min_stock
+    `;
+    
+    // Encargado por local (primer empleado encontrado)
+    const managerQuery = `
+      SELECT 
+        l.id_local,
+        COALESCE(u.nombres || ' ' || u.apellidos, 'Sin asignar') as encargado
+      FROM locale l
+      LEFT JOIN empleado e ON e.id_local = l.id_local
+      LEFT JOIN usuario u ON e.id_usuario_empleado = u.id_usuario
+      WHERE e.id_usuario_empleado IS NOT NULL
+      GROUP BY l.id_local, u.nombres, u.apellidos
+      ORDER BY l.id_local
+      LIMIT 1
+    `;
+    
+    const todayResult = await pool.query(todayQuery, [today]);
+    const productsResult = await pool.query(productsQuery);
+    const stockResult = await pool.query(stockQuery);
+    
+    // Obtener encargados para cada local
+    const managers = {};
+    const managerQuery2 = `
+      SELECT 
+        e.id_local,
+        u.nombres || ' ' || u.apellidos as encargado
+      FROM empleado e
+      JOIN usuario u ON e.id_usuario_empleado = u.id_usuario
+      WHERE e.id_local IS NOT NULL
+      GROUP BY e.id_local, u.nombres, u.apellidos
+    `;
+    const managerResult = await pool.query(managerQuery2);
+    managerResult.rows.forEach(row => {
+      if (!managers[row.id_local]) {
+        managers[row.id_local] = row.encargado;
+      }
+    });
+    
+    const comparison = todayResult.rows.map((row) => ({
+      id_local: row.id_local,
+      nombre_local: row.nombre_local,
+      ventas_hoy: parseFloat(row.ventas_hoy_total),
+      ventas_hoy_count: parseInt(row.ventas_hoy_count),
+      total_productos: parseInt(productsResult.rows[0].total_productos),
+      stock_bajo: parseInt(stockResult.rows[0].productos_stock_bajo),
+      encargado: managers[row.id_local] || 'Sin asignar'
+    }));
+    
+    res.json(comparison);
+  } catch (err) {
+    console.error('Error en getStoresComparison:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function getMonthlyHistory(req, res) {
+  const { local } = req.query;
+  try {
+    const query = `
+      SELECT 
+        TO_CHAR(DATE_TRUNC('month', b.fecha_emision), 'YYYY-MM') as mes,
+        COALESCE(SUM(b.total), 0) as total_ventas,
+        COUNT(b.id_boleta) as cantidad_ventas
+      FROM boleta b
+      LEFT JOIN empleado e ON b.id_empleado_boleta = e.id_usuario_empleado
+      LEFT JOIN locale l ON e.id_local = l.id_local
+      WHERE b.fecha_emision >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+      ${local ? 'AND l.id_local = $1' : ''}
+      GROUP BY DATE_TRUNC('month', b.fecha_emision)
+      ORDER BY DATE_TRUNC('month', b.fecha_emision) ASC
+    `;
+    
+    const params = local ? [local] : [];
+    const { rows } = await pool.query(query, params);
+    
+    // Formatear para el gráfico (convertir mes a abreviatura)
+    const monthNames = {
+      '01': 'Ene', '02': 'Feb', '03': 'Mar', 
+      '04': 'Abr', '05': 'May', '06': 'Jun',
+      '07': 'Jul', '08': 'Ago', '09': 'Sep',
+      '10': 'Oct', '11': 'Nov', '12': 'Dic'
+    };
+    
+    const result = rows.map(row => ({
+      month: monthNames[row.mes.split('-')[1]],
+      sales: parseFloat(row.total_ventas),
+      count: parseInt(row.cantidad_ventas)
+    }));
+    
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   processSale,
   getSalesByDay,
   getSalesByMonth,
-  getRecentSales
+  getRecentSales,
+  getStoresComparison,
+  getMonthlyHistory
 };
