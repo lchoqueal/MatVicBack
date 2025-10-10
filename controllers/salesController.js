@@ -1,4 +1,6 @@
 const db = require('../config/db');
+// salesController.js
+const pool = require('../config/db');
 
 async function processSale(req, res) {
   const { metodo_pago, id_empleado, id_cliente, items } = req.body;
