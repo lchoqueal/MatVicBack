@@ -13,7 +13,7 @@ const Product = {
     const { nombre, descripcion = null, categoria, stock = 0, min_stock = 0, precio_unit = 0 } = data;
     const { rows } = await pool.query(
       `INSERT INTO producto (nombre, descripcion, categoria, stock, min_stock, precio_unit)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit`,
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit`,
       [nombre, descripcion, categoria, stock, min_stock, precio_unit]
     );
     return rows[0];
@@ -79,4 +79,5 @@ const Product = {
 };
 
 module.exports = Product;
+
 
