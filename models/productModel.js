@@ -35,7 +35,7 @@ const Product = {
     return rows[0];
   },
   async remove(id) {
-    const { rows } = await pool.query('DELETE FROM producto WHERE id_producto = $1 RETURNING id_producto', [id]);
+    const { rows } = await pool.query("UPDATE producto SET estado = 'inactivo' WHERE id_producto = $1 RETURNING id_producto, estado", [id]);
     return rows[0];
   },
   async updateStock(id, newStock) {
