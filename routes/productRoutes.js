@@ -8,6 +8,9 @@ const adminMiddleware = require('../middleware/adminMiddleware');
 // endpoint para productos criticos (colocar antes de las rutas con parámetros)
 router.get('/alerts', productController.alerts);
 
+// endpoint para estadísticas de productos
+router.get('/stats', authMiddleware, productController.stats);
+
 // lectura pública
 router.get('/', productController.list);
 router.get('/:id', productController.get);

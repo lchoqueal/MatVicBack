@@ -46,7 +46,20 @@ const Product = {
     return rows[0];
   },
   async getCritical() {
-    const { rows } = await pool.query('SELECT id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit FROM producto WHERE stock <= min_stock ORDER BY id_producto');
+    const { rows } = await pool.query(`
+      SELECT 
+        id_producto, 
+        nombre, 
+        descripcion, 
+        categoria, 
+        stock as stock_actual, 
+        min_stock, 
+        precio_unit,
+        'Local General' as local
+      FROM producto 
+      WHERE stock <= min_stock 
+      ORDER BY id_producto
+    `);
     return rows;
   },
   // incrementar stock (compra)

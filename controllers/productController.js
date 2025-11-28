@@ -109,7 +109,25 @@ const productController = {
   async alerts(req, res) {
     try {
       const critical = await Product.getCritical();
-      res.json(critical);
+      // Formatear respuesta para que coincida con lo que espera el frontend
+      res.json({ productos: critical });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+  // estadísticas de productos - nuevo endpoint
+  async stats(req, res) {
+    try {
+      const products = await Product.getAll();
+      const totalStock = products.reduce((sum, product) => sum + (product.stock || 0), 0);
+      const totalProducts = products.length;
+      const lowStockCount = products.filter(p => p.stock <= p.min_stock).length;
+      
+      res.json({
+        totalStock,
+        totalProducts,
+        lowStockCount
+      });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
