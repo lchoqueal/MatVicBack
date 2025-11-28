@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
+const uploadsRoutes = require('./routes/uploads');
 const productController = require('./controllers/productController');
 const { startListener } = require('./services/dbListener');
 
@@ -47,7 +48,8 @@ pool
     });
 
     app.use('/api/sales', salesRoutes);
-  app.use('/api/alerts', alertsRoutes);
+    app.use('/api/alerts', alertsRoutes);
+    app.use('/api/uploads', uploadsRoutes);
 
     server.listen(PORT, () => {
       console.log(`Backend corriendo en puerto ${PORT}`);
