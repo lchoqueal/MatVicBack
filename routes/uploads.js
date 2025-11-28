@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { upload, handleMulterError } = require('../middleware/upload');
 const uploadController = require('../controllers/uploadController');
-const verifyToken = require('../middleware/verifyToken');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Middleware de autenticación para todas las rutas
-router.use(verifyToken);
+router.use(authMiddleware);
 
 // POST /api/uploads/product/:id - Subir imagen para un producto
 router.post('/product/:id', 
@@ -21,4 +21,5 @@ router.delete('/product/:id',
 // Middleware para manejar errores de Multer
 router.use(handleMulterError);
 
+module.exports = router;
 module.exports = router;
