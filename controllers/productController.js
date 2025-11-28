@@ -32,6 +32,10 @@ const productController = {
     let tempFilePath = null;
     
     try {
+      console.log('=== CREATE PRODUCT DEBUG ===');
+      console.log('Body:', req.body);
+      console.log('File:', req.file ? { filename: req.file.filename, size: req.file.size, mimetype: req.file.mimetype } : 'No file');
+      
       // validations
       if (!req.body.nombre) return res.status(400).json({ error: 'nombre es requerido' });
       
@@ -41,14 +45,18 @@ const productController = {
       // Si hay imagen, subirla a Cloudinary
       if (req.file) {
         tempFilePath = req.file.path;
+        console.log('Archivo temporal creado:', tempFilePath);
         
         try {
+          console.log('Intentando subir a Cloudinary...');
           const result = await uploadImage(tempFilePath, 'productos');
+          console.log('Imagen subida exitosamente:', result.secure_url);
           
           // Actualizar el producto con la URL de la imagen
           const updated = await Product.update(created.id_producto, { 
             imagen_url: result.secure_url 
           });
+          console.log('Producto actualizado con imagen URL');
           
           // Limpiar archivo temporal
           cleanupTempFile(tempFilePath);
