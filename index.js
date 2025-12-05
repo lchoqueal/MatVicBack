@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 require('dotenv').config();
 
 const pool = require('./config/db');
@@ -18,6 +20,8 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => res.send('API funcionando'));
 app.get('/healthz', (req, res) => res.status(200).send('OK'));

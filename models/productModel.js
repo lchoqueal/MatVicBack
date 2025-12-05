@@ -1,14 +1,24 @@
+const BaseRepository = require('./BaseRepository');
 const pool = require('../config/db');
 
-const Product = {
+class ProductModel extends BaseRepository {
+  constructor() {
+    super('producto');
+  }
+
+  async getById(id) {
+    return super.getById(id, 'id_producto');
+  }
+
+  async remove(id) {
+    return super.remove(id, 'id_producto');
+  }
+
   async getAll() {
     const { rows } = await pool.query('SELECT id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url FROM producto ORDER BY id_producto');
     return rows;
-  },
-  async getById(id) {
-    const { rows } = await pool.query('SELECT id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url FROM producto WHERE id_producto = $1', [id]);
-    return rows[0];
-  },
+  }
+
   async create(data) {
     const { nombre, descripcion = null, categoria, stock = 0, min_stock = 0, precio_unit = 0 } = data;
     const { rows } = await pool.query(
@@ -17,7 +27,8 @@ const Product = {
       [nombre, descripcion, categoria, stock, min_stock, precio_unit]
     );
     return rows[0];
-  },
+  }
+
   async update(id, data) {
     const fields = [];
     const values = [];
@@ -33,18 +44,16 @@ const Product = {
     values.push(id);
     const { rows } = await pool.query(`UPDATE producto SET ${fields.join(', ')} WHERE id_producto = $${idx} RETURNING id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url`, values);
     return rows[0];
-  },
-  async remove(id) {
-    const { rows } = await pool.query('DELETE FROM producto WHERE id_producto = $1 RETURNING id_producto', [id]);
-    return rows[0];
-  },
+  }
+
   async updateStock(id, newStock) {
     const { rows } = await pool.query(
       'UPDATE producto SET stock = $1 WHERE id_producto = $2 RETURNING id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url',
       [newStock, id]
     );
     return rows[0];
-  },
+  }
+
   async getCritical() {
     const { rows } = await pool.query(`
       SELECT 
@@ -62,16 +71,16 @@ const Product = {
       ORDER BY id_producto
     `);
     return rows;
-  },
-  // incrementar stock (compra)
+  }
+
   async incrementStock(id, qty) {
     const { rows } = await pool.query(
       'UPDATE producto SET stock = stock + $1 WHERE id_producto = $2 RETURNING id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url',
       [qty, id]
     );
     return rows[0];
-  },
-  // transferencia entre productos/almacenes simplificada (si no hay almacenes solo ajusta stock)
+  }
+
   async transferStock(idFrom, idTo, qty) {
     const client = await pool.connect();
     try {
@@ -90,8 +99,8 @@ const Product = {
       client.release();
     }
   }
-};
+}
 
-module.exports = Product;
+module.exports = new ProductModel();
 
 
