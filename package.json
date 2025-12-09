@@ -1,0 +1,40 @@
+{
+  "name": "matvicback",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node scripts/seed.js",
+    "migrate": "node scripts/apply_migrations.js",
+    "migrate:sprint2": "node scripts/apply_sprint2_migrations.js",
+    "seed:sprint2": "node scripts/seed_sprint2.js",
+    "test:sale": "node scripts/test_sale_request.js",
+    "test:e2e": "jest --runInBand",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cloudinary": "^2.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.6.9",
+    "pg": "^8.16.3",
+    "socket.io": "^4.7.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1",
+    "nodemon": "^2.0.22",
+    "supertest": "^7.1.4"
+  }
+}
