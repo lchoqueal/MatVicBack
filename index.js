@@ -1,7 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger');
 require('dotenv').config();
 
 const pool = require('./config/db');
@@ -10,19 +8,16 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
-const uploadsRoutes = require('./routes/uploads');
+const cartRoutes = require('./routes/cartRoutes');
 const productController = require('./controllers/productController');
 const { startListener } = require('./services/dbListener');
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173','https://mat-vic-front.vercel.app','https://mat-vic-front-git-main-lchoqueals-projects.vercel.app','https://mat-vic-front-git-develop-lchoqueals-projects.vercel.app'],
+  origin: ['http://localhost:5173','https://mat-vic-front.vercel.app','https://mat-vic-front-git-main-lchoqueals-projects.vercel.app'],
   credentials: true
 }));
 app.use(express.json());
-
-app.use('/api-docs', swaggerUi.serve);
-app.get('/api-docs', swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => res.send('API funcionando'));
 app.get('/healthz', (req, res) => res.status(200).send('OK'));
@@ -30,6 +25,7 @@ app.get('/healthz', (req, res) => res.status(200).send('OK'));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
 
 const PORT = process.env.PORT || 3001;
 
@@ -53,8 +49,7 @@ pool
     });
 
     app.use('/api/sales', salesRoutes);
-    app.use('/api/alerts', alertsRoutes);
-    app.use('/api/uploads', uploadsRoutes);
+  app.use('/api/alerts', alertsRoutes);
 
     server.listen(PORT, () => {
       console.log(`Backend corriendo en puerto ${PORT}`);

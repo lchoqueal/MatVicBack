@@ -1,6 +1,4 @@
 const Product = require('../models/productModel');
-const { uploadImage, deleteImage } = require('../config/cloudinary');
-const { cleanupTempFile } = require('../middleware/upload');
 
 // opcional: inyectar io en runtime desde index.js
 let io = null;
@@ -29,109 +27,21 @@ const productController = {
     }
   },
   async create(req, res) {
-    let tempFilePath = null;
-    
     try {
-      console.log('=== CREATE PRODUCT DEBUG ===');
-      console.log('Body:', req.body);
-      console.log('File:', req.file ? { filename: req.file.filename, size: req.file.size, mimetype: req.file.mimetype } : 'No file');
-      
       // validations
       if (!req.body.nombre) return res.status(400).json({ error: 'nombre es requerido' });
-      
-      // Crear el producto primero
       const created = await Product.create(req.body);
-      
-      // Si hay imagen, subirla a Cloudinary
-      if (req.file) {
-        tempFilePath = req.file.path;
-        console.log('Archivo temporal creado:', tempFilePath);
-        
-        try {
-          console.log('Intentando subir a Cloudinary...');
-          const result = await uploadImage(tempFilePath, 'productos');
-          console.log('Imagen subida exitosamente:', result.secure_url);
-          
-          // Actualizar el producto con la URL de la imagen
-          const updated = await Product.update(created.id_producto, { 
-            imagen_url: result.secure_url 
-          });
-          console.log('Producto actualizado con imagen URL');
-          
-          // Limpiar archivo temporal
-          cleanupTempFile(tempFilePath);
-          
-          return res.status(201).json(updated);
-        } catch (uploadError) {
-          console.error('Error subiendo imagen:', uploadError);
-          // Si falla la imagen, devolver producto sin imagen
-          cleanupTempFile(tempFilePath);
-        }
-      }
-      
       res.status(201).json(created);
     } catch (err) {
-      // Limpiar archivo temporal en caso de error
-      if (tempFilePath) {
-        cleanupTempFile(tempFilePath);
-      }
       res.status(500).json({ error: err.message });
     }
   },
   async update(req, res) {
-    let tempFilePath = null;
-    
     try {
       const { id } = req.params;
-      
-      // Verificar que el producto existe
-      const existingProduct = await Product.getById(id);
-      if (!existingProduct) {
-        return res.status(404).json({ error: 'Producto no encontrado' });
-      }
-      
-      // Si hay nueva imagen, procesarla
-      if (req.file) {
-        tempFilePath = req.file.path;
-        
-        try {
-          // Eliminar imagen anterior si existe
-          if (existingProduct.imagen_url) {
-            try {
-              const urlParts = existingProduct.imagen_url.split('/');
-              const fileWithExt = urlParts[urlParts.length - 1];
-              const publicId = `productos/${fileWithExt.split('.')[0]}`;
-              await deleteImage(publicId);
-            } catch (deleteError) {
-              console.warn('No se pudo eliminar imagen anterior:', deleteError.message);
-            }
-          }
-          
-          // Subir nueva imagen
-          const result = await uploadImage(tempFilePath, 'productos');
-          
-          // Agregar URL de imagen a los datos de actualización
-          req.body.imagen_url = result.secure_url;
-          
-          // Limpiar archivo temporal
-          cleanupTempFile(tempFilePath);
-          
-        } catch (uploadError) {
-          console.error('Error procesando imagen:', uploadError);
-          cleanupTempFile(tempFilePath);
-          // Continuar sin imagen si falla
-        }
-      }
-      
-      // Actualizar producto
       const updated = await Product.update(id, req.body);
       res.json(updated);
-      
     } catch (err) {
-      // Limpiar archivo temporal en caso de error
-      if (tempFilePath) {
-        cleanupTempFile(tempFilePath);
-      }
       res.status(500).json({ error: err.message });
     }
   },
@@ -199,25 +109,7 @@ const productController = {
   async alerts(req, res) {
     try {
       const critical = await Product.getCritical();
-      // Formatear respuesta para que coincida con lo que espera el frontend
-      res.json({ productos: critical });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  },
-  // estadísticas de productos - nuevo endpoint
-  async stats(req, res) {
-    try {
-      const products = await Product.getAll();
-      const totalStock = products.reduce((sum, product) => sum + (product.stock || 0), 0);
-      const totalProducts = products.length;
-      const lowStockCount = products.filter(p => p.stock <= p.min_stock).length;
-      
-      res.json({
-        totalStock,
-        totalProducts,
-        lowStockCount
-      });
+      res.json(critical);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
