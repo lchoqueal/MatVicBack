@@ -6,6 +6,7 @@ const pool = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
+const clientRoutes = require('./routes/clientRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 const cartRoutes = require('./routes/cartRoutes');
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/clients', clientRoutes);
 
 const PORT = process.env.PORT || 3001;
 
