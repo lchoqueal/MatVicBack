@@ -20,9 +20,35 @@ const adminMiddleware = require('../middleware/adminMiddleware');
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Producto'
+ *                 `$ref: '#/components/schemas/Producto'
  */
 router.get('/alerts', productController.alerts);
+
+/**
+ * @swagger
+ * /api/products/stats:
+ *   get:
+ *     summary: Estadísticas de productos
+ *     tags: [Productos]
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalStock:
+ *                   type: integer
+ *                 totalProducts:
+ *                   type: integer
+ *                 lowStockProducts:
+ *                   type: integer
+ */
+router.get('/stats', productController.stats);
+
+// busqueda de productos (antes de /:id para evitar conflictos)
+router.get('/search', productController.search);
 
 /**
  * @swagger
@@ -38,7 +64,7 @@ router.get('/alerts', productController.alerts);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Producto'
+ *                 `$ref: '#/components/schemas/Producto'
  */
 router.get('/', productController.list);
 
@@ -60,7 +86,7 @@ router.get('/', productController.list);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Producto'
+ *               `$ref: '#/components/schemas/Producto'
  *       404:
  *         description: Producto no encontrado
  */
@@ -98,7 +124,7 @@ router.get('/:id', productController.get);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Producto'
+ *               `$ref: '#/components/schemas/Producto'
  *       400:
  *         description: Datos inválidos
  *       401:
@@ -145,7 +171,7 @@ router.post('/', authMiddleware, adminMiddleware, productController.create);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Producto'
+ *               `$ref: '#/components/schemas/Producto'
  *       400:
  *         description: Datos inválidos
  *       401:
@@ -265,34 +291,5 @@ router.post('/:id/purchase', authMiddleware, adminMiddleware, productController.
  *         description: Sin permisos
  */
 router.post('/transfer', authMiddleware, adminMiddleware, productController.transfer);
-// busqueda de productos
-router.get('/search', productController.search);
-
-/**
- * @swagger
- * /api/products/stats:
- *   get:
- *     summary: Estadísticas de productos
- *     tags: [Productos]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: OK
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 totalStock:
- *                   type: integer
- *                 totalProducts:
- *                   type: integer
- *                 lowStockProducts:
- *                   type: integer
- */
-router.get('/stats', productController.stats);
-
-module.exports = router;
 
 module.exports = router;
