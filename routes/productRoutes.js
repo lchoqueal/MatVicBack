@@ -19,5 +19,6 @@ router.patch('/:id/stock', authMiddleware, adminMiddleware, productController.up
 // compras y transferencias
 router.post('/:id/purchase', authMiddleware, adminMiddleware, productController.purchase);
 router.post('/transfer', authMiddleware, adminMiddleware, productController.transfer);
-
+// busqueda de productos
+router.get('/search', productController.search);
 module.exports = router;
