@@ -3,29 +3,27 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const authController = {
-  // --- LOGIN (Sin cambios, está correcto) ---
+  // --- LOGIN (Ajustado para no pedir 'rol' si no existe) ---
   async login(req, res) {
     const { username, name_user, password, contrasena } = req.body; 
-    
     const userLogin = username || name_user;
     const passLogin = password || contrasena;
 
     if (!userLogin || !passLogin) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
     
     try {
+      // Quitamos 'rol' del select si no existe, o traemos todo *
       const { rows } = await pool.query('SELECT * FROM usuario WHERE name_user = $1 LIMIT 1', [userLogin]);
       const user = rows[0];
-      
-      console.log('Intento login:', userLogin, user ? 'Encontrado' : 'No encontrado');
       
       if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
       
       const match = await bcrypt.compare(passLogin, user.contrasena || '');
-      
       if (!match) return res.status(401).json({ error: 'Credenciales inválidas' });
       
       const token = jwt.sign(
-        { id: user.id_usuario, username: user.name_user, role: user.rol }, 
+        // Si no tienes columna rol, no lo enviamos en el token o lo ponemos 'cliente' por defecto
+        { id: user.id_usuario, username: user.name_user, role: 'cliente' }, 
         process.env.JWT_SECRET || 'secret', 
         { expiresIn: '8h' }
       );
@@ -35,7 +33,7 @@ const authController = {
         user: { 
           id_usuario: user.id_usuario,
           name_user: user.name_user, 
-          rol: user.rol 
+          // rol: user.rol // Comentado porque no existe en tu tabla
         } 
       });
     } catch (err) {
@@ -44,58 +42,57 @@ const authController = {
     }
   },
 
-  // --- REGISTRO (OPTIMIZADO) ---
+  // --- REGISTRO CORREGIDO PARA TUS TABLAS ---
   async register(req, res) {
     const { name_user, correo, contrasena } = req.body;
 
-    // 1. Validaciones básicas
     if (!name_user || !correo || !contrasena) {
-      return res.status(400).json({ error: 'Faltan datos requeridos (Usuario, Correo, Contraseña)' });
+      return res.status(400).json({ error: 'Faltan datos requeridos.' });
     }
 
-    const client = await pool.connect(); 
+    const client = await pool.connect();
 
     try {
-      await client.query('BEGIN'); // Iniciar transacción
+      await client.query('BEGIN');
 
-      // 2. Verificar duplicados (Usuario o Correo)
-      const checkRes = await client.query(
-        'SELECT * FROM usuario WHERE name_user = $1 OR correo = $2', 
-        [name_user, correo]
-      );
+      // 1. Verificar duplicados
+      // Buscamos usuario por nombre en 'usuario' y correo en 'cliente'
+      // Esto requiere dos consultas o un JOIN, haremos lo simple primero:
       
-      if (checkRes.rows.length > 0) {
+      const checkUser = await client.query('SELECT * FROM usuario WHERE name_user = $1', [name_user]);
+      if (checkUser.rows.length > 0) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'El nombre de usuario o el correo ya están registrados.' });
+        return res.status(400).json({ error: 'El nombre de usuario ya está en uso.' });
       }
 
-      // 3. Encriptar contraseña
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(contrasena, saltRounds);
+      // Verificamos correo en la tabla CLIENTE (donde sí existe la columna)
+      const checkMail = await client.query('SELECT * FROM cliente WHERE correo = $1', [correo]);
+      if (checkMail.rows.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'El correo ya está registrado.' });
+      }
 
-      // 4. Insertar en USUARIO
-      const userQuery = `
-        INSERT INTO usuario (name_user, correo, contrasena, rol) 
-        VALUES ($1, $2, $3, 'cliente') 
-        RETURNING id_usuario, name_user, correo, rol
-      `;
-      const userRes = await client.query(userQuery, [name_user, correo, hashedPassword]);
+      // 2. Encriptar
+      const hashedPassword = await bcrypt.hash(contrasena, 10);
+
+      // 3. Insertar en USUARIO
+      // ⚠️ CORRECCIÓN: Quitamos 'correo' y 'rol' de aquí porque NO existen en tu tabla usuario
+      const userRes = await client.query(`
+        INSERT INTO usuario (name_user, contrasena, estado) 
+        VALUES ($1, $2, 'activo') 
+        RETURNING id_usuario, name_user
+      `, [name_user, hashedPassword]);
+      
       const newUser = userRes.rows[0];
 
-      // 🛡️ CONTROL DE ERRORES EXTRA
-      if (!newUser || !newUser.id_usuario) {
-        throw new Error("No se pudo generar el ID del usuario.");
-      }
-
-      // 5. Insertar en CLIENTE
-      // ✅ MEJORA: Insertamos también el CORREO para mantener consistencia con tu tabla.
-      const clientQuery = `
+      // 4. Insertar en CLIENTE
+      // ⚠️ CORRECCIÓN: Aquí SÍ insertamos el correo
+      await client.query(`
         INSERT INTO cliente (id_usuario_cliente, correo, estado) 
         VALUES ($1, $2, 'activo')
-      `;
-      await client.query(clientQuery, [newUser.id_usuario, correo]);
+      `, [newUser.id_usuario, correo]);
 
-      await client.query('COMMIT'); // Confirmar todo
+      await client.query('COMMIT');
 
       res.status(201).json({
         message: 'Usuario registrado exitosamente',
@@ -103,11 +100,11 @@ const authController = {
       });
 
     } catch (err) {
-      await client.query('ROLLBACK'); // Deshacer cambios si falla
-      console.error('Error crítico en registro:', err);
+      await client.query('ROLLBACK');
+      console.error('Error en registro:', err.message);
       res.status(500).json({ error: 'Error interno: ' + err.message });
     } finally {
-      client.release(); // Liberar conexión
+      client.release();
     }
   }
 };
