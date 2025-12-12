@@ -114,6 +114,29 @@ const productController = {
       res.status(500).json({ error: err.message });
     }
   },
+  async search(req, res) {
+    try {
+      const { q } = req.query; // Obtenemos el texto ?q=celular
+      
+      if (!q) return res.json([]);
+
+      // Usamos ILIKE para que no importen mayúsculas/minúsculas
+      // Buscamos en el nombre O en la descripción
+      const { rows } = await pool.query(
+        `SELECT * FROM producto 
+         WHERE nombre ILIKE $1 OR descripcion ILIKE $1 
+         AND stock > 0
+         LIMIT 20`,
+        [`%${q}%`] // Los % permiten buscar texto parcial
+      );
+
+      res.json(rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Error en la búsqueda" });
+    }
+  }
+};
 };
 
 module.exports = productController;
