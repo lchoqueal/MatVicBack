@@ -4,7 +4,7 @@ const Product = {
   // 1. LISTA GENERAL (Aquí estaba el fallo de NewestProducts)
   async getAll() {
     // AGREGADO: images_url
-    const { rows } = await pool.query('SELECT id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, images_url FROM producto ORDER BY id_producto');
+    const { rows } = await pool.query('SELECT id_producto, nombre, descripcion, categoria, stock, min_stock, precio_unit, imagen_url FROM producto ORDER BY id_producto');
     return rows;
   },
 
