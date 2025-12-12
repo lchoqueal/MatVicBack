@@ -108,4 +108,3 @@ const Product = {
 };
 
 module.exports = Product;
-reemplazar productModel.js
