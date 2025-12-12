@@ -3,6 +3,10 @@ const router = express.Router();
 const cartController = require('../controllers/cartController');
 const authMiddleware = require('../middleware/authMiddleware');
 
+
+// Ruta para crear o recuperar el carrito (requiere autenticación)
+router.post('/', authMiddleware, cartController.createOrGetCart);
+
 // Obtener carrito del usuario
 router.get('/', authMiddleware, cartController.getCart);
 

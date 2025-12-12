@@ -1,31 +1,20 @@
 const pool = require('../config/db');
 
 const Cart = {
-  // 1. OBTENER O CREAR CARRITO
-  async getOrCreateCart(idCliente) {
-    // BUSCAR: Filtramos por 'estado_carrito' para saber si está activo (abierto)
-    const { rows } = await pool.query(
-      `SELECT id_carrito, estado_carrito, estado, id_cliente 
-       FROM carrito 
-       WHERE id_cliente = $1 AND estado_carrito = 'activo' 
-       LIMIT 1`,
-      [idCliente]
+  // Busca un carrito activo para el cliente
+  async findOrCreateByUserId(id_cliente) {
+    // Buscar carrito activo
+    let { rows } = await pool.query(
+      'SELECT * FROM carrito WHERE id_cliente = $1 AND estado = $2 LIMIT 1',
+      [id_cliente, 'activo']
     );
-
-    if (rows.length > 0) {
-      return rows[0];
-    }
-
-    // CREAR: Si no existe, creamos uno nuevo.
-    // estado_carrito = 'activo' (Está abierto para meter cosas)
-    // estado = 'pendiente' (Aún no se ha pagado)
-    const { rows: created } = await pool.query(
-      `INSERT INTO carrito (id_cliente, estado_carrito, estado) 
-       VALUES ($1, 'activo', 'pendiente') 
-       RETURNING id_carrito, estado_carrito, estado, id_cliente`,
-      [idCliente]
-    );
-    return created[0];
+    if (rows.length > 0) return rows[0];
+    // Si no existe, crear uno nuevo
+    ({ rows } = await pool.query(
+      'INSERT INTO carrito (estado, id_cliente) VALUES ($1, $2) RETURNING *',
+      ['activo', id_cliente]
+    ));
+    return rows[0];
   },
 
   // 2. OBTENER CARRITO POR ID

@@ -1,6 +1,22 @@
 const pool = require('../config/db');
+const Cart = require('../models/cartModel');
 
 const cartController = {
+    // Crea o recupera el carrito activo del usuario autenticado
+    async createOrGetCart(req, res) {
+      try {
+        // Buscar el id_cliente a partir del id_usuario autenticado
+        const { rows } = await pool.query('SELECT id_usuario_cliente FROM cliente WHERE id_usuario_cliente = $1', [req.userId]);
+        if (!rows[0]) return res.status(404).json({ error: 'Cliente no encontrado' });
+        const id_cliente = rows[0].id_usuario_cliente;
+        // Buscar o crear el carrito activo
+        const carrito = await Cart.findOrCreateByUserId(id_cliente);
+        res.status(200).json({ id_carrito: carrito.id_carrito, estado: carrito.estado });
+      } catch (error) {
+        console.error('Error en createOrGetCart:', error);
+        res.status(500).json({ error: 'Error al crear o recuperar el carrito' });
+      }
+    },
   // Obtener carrito del usuario autenticado
   getCart: async (req, res) => {
     try {
