@@ -1,4 +1,3 @@
-const pool = require('../config/db');
 const Product = require('../models/productModel');
 
 // opcional: inyectar io en runtime desde index.js
@@ -137,33 +136,6 @@ const productController = {
       res.status(500).json({ error: "Error en la búsqueda" });
     }
 
-  }
-,
-
-  async stats(req, res) {
-    try {
-      // Total de productos
-      const totalProductsQuery = `SELECT COUNT(*) as total_productos FROM producto`;
-      const totalStockQuery = `SELECT COALESCE(SUM(stock), 0) as total_stock FROM producto`;
-      const lowStockQuery = `SELECT COUNT(*) as productos_stock_bajo FROM producto WHERE stock <= min_stock`;
-      
-      const [totalProductsResult, totalStockResult, lowStockResult] = await Promise.all([
-        pool.query(totalProductsQuery),
-        pool.query(totalStockQuery),
-        pool.query(lowStockQuery)
-      ]);
-
-      const stats = {
-        totalStock: parseInt(totalStockResult.rows[0].total_stock),
-        totalProducts: parseInt(totalProductsResult.rows[0].total_productos),
-        lowStockProducts: parseInt(lowStockResult.rows[0].productos_stock_bajo)
-      };
-
-      res.json(stats);
-    } catch (err) {
-      console.error('Error en stats de productos:', err);
-      res.status(500).json({ error: err.message });
-    }
   }
 };
 

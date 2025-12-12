@@ -267,4 +267,32 @@ router.post('/:id/purchase', authMiddleware, adminMiddleware, productController.
 router.post('/transfer', authMiddleware, adminMiddleware, productController.transfer);
 // busqueda de productos
 router.get('/search', productController.search);
+
+/**
+ * @swagger
+ * /api/products/stats:
+ *   get:
+ *     summary: Estadísticas de productos
+ *     tags: [Productos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalStock:
+ *                   type: integer
+ *                 totalProducts:
+ *                   type: integer
+ *                 lowStockProducts:
+ *                   type: integer
+ */
+router.get('/stats', authMiddleware, adminMiddleware, productController.stats);
+
+module.exports = router;
+
 module.exports = router;
