@@ -291,7 +291,7 @@ router.get('/search', productController.search);
  *                 lowStockProducts:
  *                   type: integer
  */
-router.get('/stats', authMiddleware, adminMiddleware, productController.stats);
+router.get('/stats', productController.stats);
 
 module.exports = router;
 
