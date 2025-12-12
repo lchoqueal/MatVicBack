@@ -137,7 +137,7 @@ const productController = {
       res.status(500).json({ error: "Error en la búsqueda" });
     }
 
-  }
+  },
 ,
 
   async stats(req, res) {
