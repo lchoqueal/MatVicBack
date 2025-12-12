@@ -142,10 +142,14 @@ const productController = {
 
   async stats(req, res) {
     try {
+      console.log('📊 Iniciando stats de productos...');
+      
       // Total de productos
       const totalProductsQuery = `SELECT COUNT(*) as total_productos FROM producto`;
       const totalStockQuery = `SELECT COALESCE(SUM(stock), 0) as total_stock FROM producto`;
       const lowStockQuery = `SELECT COUNT(*) as productos_stock_bajo FROM producto WHERE stock <= min_stock`;
+      
+      console.log('📊 Ejecutando consultas SQL...');
       
       const [totalProductsResult, totalStockResult, lowStockResult] = await Promise.all([
         pool.query(totalProductsQuery),
@@ -153,15 +157,23 @@ const productController = {
         pool.query(lowStockQuery)
       ]);
 
+      console.log('📊 Resultados SQL:', {
+        totalProducts: totalProductsResult.rows[0],
+        totalStock: totalStockResult.rows[0],
+        lowStock: lowStockResult.rows[0]
+      });
+
       const stats = {
         totalStock: parseInt(totalStockResult.rows[0].total_stock),
         totalProducts: parseInt(totalProductsResult.rows[0].total_productos),
         lowStockProducts: parseInt(lowStockResult.rows[0].productos_stock_bajo)
       };
 
+      console.log('📊 Stats calculadas:', stats);
       res.json(stats);
     } catch (err) {
-      console.error('Error en stats de productos:', err);
+      console.error('❌ Error en stats de productos:', err);
+      console.error('❌ Stack trace:', err.stack);
       res.status(500).json({ error: err.message });
     }
   }
