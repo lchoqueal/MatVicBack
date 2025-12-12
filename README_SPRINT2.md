@@ -251,6 +251,41 @@ node test_simple.js # En terminal 2
 
 ---
 
+### 6. **models/clientModel.js / controllers/clientController.js / routes/clientRoutes.js** (≈120 líneas)
+**Propósito:** Implementar endpoint de registro de clientes (creación en `usuario` + entrada en `cliente`).
+
+**Flujo principal:**
+1. Validaciones básicas en el controlador (`nombres`, `apellidos`, `name_user`, `contrasena`, `dni`).
+2. Verificar unicidad de `name_user` mediante `User.getByUsername`.
+3. Hashear contraseña con `bcrypt.hash(contrasena, 10)`.
+4. Inserción en la BD usando transacción (`pool.connect()` + `BEGIN`/`COMMIT`/`ROLLBACK`): primero `INSERT INTO usuario`, luego `INSERT INTO cliente`.
+5. Responder `201 Created` con objeto que incluye `id_usuario` y el objeto `cliente` (telefono/correo/direccion).
+
+**Archivos añadidos:**
+```text
+models/clientModel.js
+controllers/clientController.js
+routes/clientRoutes.js
+scripts/test_client_request.js  # script de prueba rápido
+```
+
+**Notas técnicas:**
+- Hashing de contraseñas con `bcrypt` (salts = 10), consistente con `seed.js` y `fix_admin.js`.
+- Transacciones ACID para asegurar integridad entre `usuario` y `cliente`.
+- Validaciones y manejo de errores siguen el patrón del proyecto (`res.status(400).json({ error: '...' })`, `res.status(500).json({ error: err.message })`).
+- La ruta fue montada en `index.js` como `app.use('/api/clients', clientRoutes)`.
+
+**Testing rápido aplicado:**
+- Ejecutado `node scripts/test_client_request.js` contra `http://localhost:3001/api/clients` → `STATUS 201` y respuesta JSON con `id_usuario` y `cliente`.
+
+**Mejoras sugeridas (opcionales):**
+- Añadir constraint UNIQUE en DB para `usuario.name_user`.
+- Validaciones adicionales (formato de correo, longitud mínima de contraseña, validación de DNI).
+- Prueba automatizada con Jest + Supertest para este endpoint.
+
+
+---
+
 ## 🔌 APIs Disponibles
 
 ### 1. CATÁLOGO (Público, sin autenticación)
