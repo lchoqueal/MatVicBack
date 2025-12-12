@@ -3,10 +3,10 @@ const pool = require('../config/db');
 const Cart = {
   // 1. Obtener o crear carrito activo
   async getOrCreateCart(idCliente) {
-    // Buscamos por la columna 'estado'
+    // CORRECCIÓN: Usamos 'estado_carrito' que es la columna que tiene el default en tu BD
     const { rows } = await pool.query(
-      `SELECT id_carrito, estado, id_cliente FROM carrito 
-       WHERE id_cliente = $1 AND estado = 'activo' 
+      `SELECT id_carrito, estado_carrito, id_cliente FROM carrito 
+       WHERE id_cliente = $1 AND estado_carrito = 'activo' 
        LIMIT 1`,
       [idCliente]
     );
@@ -16,11 +16,11 @@ const Cart = {
     }
 
     // Si no existe, creamos uno nuevo.
-    // IMPORTANTE: Insertamos explícitamente en 'estado' para evitar confusiones con 'estado_carrito'
+    // CORRECCIÓN: Insertamos en 'estado_carrito' y también en 'estado' para evitar confusiones
     const { rows: created } = await pool.query(
-      `INSERT INTO carrito (estado, id_cliente) 
-       VALUES ('activo', $1) 
-       RETURNING id_carrito, estado, id_cliente`,
+      `INSERT INTO carrito (id_cliente, estado_carrito, estado) 
+       VALUES ($1, 'activo', 'activo') 
+       RETURNING id_carrito, estado_carrito, id_cliente`,
       [idCliente]
     );
     return created[0];
@@ -29,17 +29,17 @@ const Cart = {
   // 2. Obtener carrito por ID
   async getById(idCarrito) {
     const { rows } = await pool.query(
-      `SELECT id_carrito, estado, id_cliente FROM carrito WHERE id_carrito = $1`,
+      `SELECT id_carrito, estado_carrito, id_cliente FROM carrito WHERE id_carrito = $1`,
       [idCarrito]
     );
     return rows[0];
   },
 
-  // 3. Obtener items (Asumiendo que existe la tabla detalle_carrito)
+  // 3. Obtener items
   async getItems(idCarrito) {
     const { rows } = await pool.query(
       `SELECT 
-        dc.id_detalle_carrito,
+        dc.id_detalle_carrito, -- CORRECCIÓN: Nombre exacto de tu tabla
         dc.cantidad,
         dc.id_carrito,
         dc.id_producto,
@@ -47,7 +47,7 @@ const Cart = {
         p.descripcion,
         p.precio_unit,
         p.stock,
-        p.imagen_url, -- Agregamos esto para que se vea la foto en el carrito si la necesitas
+        p.imagen_url,
         (dc.cantidad * p.precio_unit) AS subtotal
        FROM detalle_carrito dc
        JOIN producto p ON dc.id_producto = p.id_producto
@@ -58,7 +58,7 @@ const Cart = {
     return rows;
   },
 
-  // 4. Agregar item (Manejo de transacción para seguridad)
+  // 4. Agregar item
   async addItem(idCarrito, idProducto, cantidad) {
     const client = await pool.connect();
     try {
@@ -137,7 +137,7 @@ const Cart = {
     return rows[0];
   },
 
-  // 7. CHECKOUT (Aquí es donde usamos tu tabla detalle_boleta)
+  // 7. CHECKOUT
   async checkout(idCarrito, idEmpleado) {
     const client = await pool.connect();
     try {
@@ -169,22 +169,23 @@ const Cart = {
         total += item.cantidad * item.precio_unit;
       }
 
-      // D. Crear Boleta (Asumiendo columnas estándar según tu contexto previo)
-      // Nota: Si tu tabla boleta tiene columnas diferentes, ajusta este INSERT.
-      // Usualmente es: id_cliente, id_empleado, monto_total (o total), fecha_emision
+      // D. Crear Boleta
+      // CORRECCIÓN: Verifica si tus columnas en 'boleta' son id_empleado/id_cliente o id_empleado_boleta/id_cliente_boleta
+      // Basado en tu último SQL, NO definiste la tabla boleta completa, pero asumiré nombres estándar.
+      // Si falla aquí, revisa los nombres de columnas de tu tabla 'boleta'.
       const { rows: boletaRows } = await client.query(
-        `INSERT INTO boleta (metodo_pago, fecha_emision, monto_total, id_empleado_boleta, id_cliente_boleta)
+        `INSERT INTO boleta (metodo_pago, fecha_emision, monto_total, id_empleado, id_cliente)
          VALUES ('online', NOW(), $1, $2, $3)
          RETURNING id_boleta, monto_total, fecha_emision`,
         [total, idEmpleado, idCliente]
       );
       const idBoleta = boletaRows[0].id_boleta;
 
-      // E. Insertar Detalles de Boleta (AJUSTADO A TU TABLA)
+      // E. Insertar Detalles de Boleta
       for (const item of items) {
         const subTotal = item.cantidad * item.precio_unit;
 
-        // 👇 AQUÍ USAMOS TUS COLUMNAS: sub_total, cantidad, id_boleta, id_producto
+        // CORRECCIÓN: Usamos 'sub_total' (con guion bajo) que es como lo definiste en tu SQL
         await client.query(
           `INSERT INTO detalle_boleta (sub_total, cantidad, id_boleta, id_producto)
            VALUES ($1, $2, $3, $4)`,
@@ -199,12 +200,13 @@ const Cart = {
       }
 
       // G. Cerrar Carrito
+      // CORRECCIÓN: Actualizamos 'estado_carrito'
       await client.query(
-        `UPDATE carrito SET estado = 'completado' WHERE id_carrito = $1`,
+        `UPDATE carrito SET estado_carrito = 'completado', estado = 'completado' WHERE id_carrito = $1`,
         [idCarrito]
       );
 
-      // H. Limpiar detalles del carrito (para que no aparezcan si se reusa el ID)
+      // H. Limpiar detalles
       await client.query(
         `DELETE FROM detalle_carrito WHERE id_carrito = $1`,
         [idCarrito]
