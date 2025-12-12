@@ -10,6 +10,7 @@ const clientRoutes = require('./routes/clientRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 
 const productController = require('./controllers/productController');
 const { startListener } = require('./services/dbListener');
@@ -38,6 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/clients', clientRoutes);
 
 const PORT = process.env.PORT || 3001;
