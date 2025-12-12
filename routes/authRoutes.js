@@ -28,4 +28,8 @@ const authController = require('../controllers/authController');
 
 router.post('/login', authController.login);
 
+// Ruta para Registrarse (POST /api/auth/register)
+// ✅ Esta es la nueva línea que conecta tu botón de registro con el backend
+router.post('/register', authController.register);
+
 module.exports = router;
