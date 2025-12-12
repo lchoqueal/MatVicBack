@@ -22,7 +22,7 @@ const adminMiddleware = require('../middleware/adminMiddleware');
  *               items:
  *                 `$ref: '#/components/schemas/Producto'
  */
-router.get('/alerts', productController.alerts);
+router.get('/alerts', authMiddleware, adminMiddleware, productController.alerts);
 
 /**
  * @swagger
@@ -45,7 +45,7 @@ router.get('/alerts', productController.alerts);
  *                 lowStockProducts:
  *                   type: integer
  */
-router.get('/stats', productController.stats);
+router.get('/stats', authMiddleware, adminMiddleware, productController.stats);
 
 // busqueda de productos (antes de /:id para evitar conflictos)
 router.get('/search', productController.search);
