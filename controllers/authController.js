@@ -108,5 +108,6 @@ const authController = {
       client.release();
     }
   }
+};
 
 module.exports = authController;

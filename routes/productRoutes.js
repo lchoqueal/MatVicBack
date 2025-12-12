@@ -20,7 +20,7 @@ const adminMiddleware = require('../middleware/adminMiddleware');
  *             schema:
  *               type: array
  *               items:
- *                 `$ref: '#/components/schemas/Producto'
+ *                 $ref: '#/components/schemas/Producto'
  */
 router.get('/alerts', authMiddleware, adminMiddleware, productController.alerts);
 
@@ -64,7 +64,7 @@ router.get('/search', productController.search);
  *             schema:
  *               type: array
  *               items:
- *                 `$ref: '#/components/schemas/Producto'
+ *                 $ref: '#/components/schemas/Producto'
  */
 router.get('/', productController.list);
 
@@ -86,7 +86,7 @@ router.get('/', productController.list);
  *         content:
  *           application/json:
  *             schema:
- *               `$ref: '#/components/schemas/Producto'
+ *               $ref: '#/components/schemas/Producto'
  *       404:
  *         description: Producto no encontrado
  */
@@ -124,7 +124,7 @@ router.get('/:id', productController.get);
  *         content:
  *           application/json:
  *             schema:
- *               `$ref: '#/components/schemas/Producto'
+ *               $ref: '#/components/schemas/Producto'
  *       400:
  *         description: Datos inválidos
  *       401:
@@ -171,7 +171,7 @@ router.post('/', authMiddleware, adminMiddleware, productController.create);
  *         content:
  *           application/json:
  *             schema:
- *               `$ref: '#/components/schemas/Producto'
+ *               $ref: '#/components/schemas/Producto'
  *       400:
  *         description: Datos inválidos
  *       401:
