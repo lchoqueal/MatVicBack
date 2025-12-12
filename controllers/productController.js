@@ -138,7 +138,6 @@ const productController = {
     }
 
   },
-,
 
   async stats(req, res) {
     try {
