@@ -5,24 +5,63 @@ const { get } = require('../routes/salesRoutes');
 // Procesar venta (transacción)
 async function processSale(req, res) {
   const { metodo_pago, id_empleado, id_cliente, items } = req.body;
+  
+  console.log('📥 Datos recibidos para procesar venta:', {
+    metodo_pago,
+    id_empleado,
+    id_cliente,
+    items
+  });
+  
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'items es requerido y debe ser un array' });
+  }
+
+  if (!metodo_pago) {
+    return res.status(400).json({ error: 'metodo_pago es requerido' });
+  }
+
+  if (!id_empleado) {
+    return res.status(400).json({ error: 'id_empleado es requerido' });
   }
 
   try {
     const client = await db.connect();
     try {
+      // Verificar que el empleado existe
+      const empleadoCheck = await client.query(
+        'SELECT id_usuario_empleado FROM empleado WHERE id_usuario_empleado = $1',
+        [id_empleado]
+      );
+      
+      if (empleadoCheck.rows.length === 0) {
+        console.log('❌ Empleado no encontrado:', id_empleado);
+        return res.status(400).json({ error: `Empleado con ID ${id_empleado} no encontrado` });
+      }
+
+      console.log('✅ Empleado válido encontrado:', empleadoCheck.rows[0]);
+
       await client.query('BEGIN');
+      
+      console.log('🔄 Llamando a process_sale con:', [metodo_pago, id_empleado, id_cliente, JSON.stringify(items)]);
+      
       const result = await client.query(
         'SELECT process_sale($1,$2,$3,$4) as resp',
         [metodo_pago, id_empleado, id_cliente, JSON.stringify(items)]
       );
+      
+      console.log('✅ Resultado de process_sale:', result.rows[0]);
+      
       await client.query('COMMIT');
       return res.json(result.rows[0].resp);
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Error al procesar venta', err);
-      return res.status(500).json({ error: err.message || 'Error interno' });
+      console.error('❌ Error al procesar venta:', err);
+      console.error('❌ Error stack:', err.stack);
+      return res.status(500).json({ 
+        error: err.message || 'Error interno',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
     } finally {
       client.release();
     }
