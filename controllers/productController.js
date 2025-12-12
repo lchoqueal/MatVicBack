@@ -144,37 +144,43 @@ const productController = {
     try {
       console.log('📊 Iniciando stats de productos...');
       
-      // Total de productos
+      // Probar consulta más simple primero
+      console.log('📊 Probando consulta básica...');
+      const testQuery = await pool.query('SELECT COUNT(*) as count FROM producto');
+      console.log('📊 Test query result:', testQuery.rows[0]);
+      
+      // Solo si la consulta básica funciona, hacer las consultas complejas
+      console.log('📊 Ejecutando consultas principales...');
+      
       const totalProductsQuery = `SELECT COUNT(*) as total_productos FROM producto`;
       const totalStockQuery = `SELECT COALESCE(SUM(stock), 0) as total_stock FROM producto`;
       const lowStockQuery = `SELECT COUNT(*) as productos_stock_bajo FROM producto WHERE stock <= min_stock`;
       
-      console.log('📊 Ejecutando consultas SQL...');
+      const totalProductsResult = await pool.query(totalProductsQuery);
+      console.log('📊 Total productos:', totalProductsResult.rows[0]);
       
-      const [totalProductsResult, totalStockResult, lowStockResult] = await Promise.all([
-        pool.query(totalProductsQuery),
-        pool.query(totalStockQuery),
-        pool.query(lowStockQuery)
-      ]);
-
-      console.log('📊 Resultados SQL:', {
-        totalProducts: totalProductsResult.rows[0],
-        totalStock: totalStockResult.rows[0],
-        lowStock: lowStockResult.rows[0]
-      });
+      const totalStockResult = await pool.query(totalStockQuery);
+      console.log('📊 Total stock:', totalStockResult.rows[0]);
+      
+      const lowStockResult = await pool.query(lowStockQuery);
+      console.log('📊 Stock bajo:', lowStockResult.rows[0]);
 
       const stats = {
-        totalStock: parseInt(totalStockResult.rows[0].total_stock),
-        totalProducts: parseInt(totalProductsResult.rows[0].total_productos),
-        lowStockProducts: parseInt(lowStockResult.rows[0].productos_stock_bajo)
+        totalStock: parseInt(totalStockResult.rows[0].total_stock) || 0,
+        totalProducts: parseInt(totalProductsResult.rows[0].total_productos) || 0,
+        lowStockProducts: parseInt(lowStockResult.rows[0].productos_stock_bajo) || 0
       };
 
-      console.log('📊 Stats calculadas:', stats);
+      console.log('📊 Stats finales:', stats);
       res.json(stats);
     } catch (err) {
-      console.error('❌ Error en stats de productos:', err);
+      console.error('❌ Error en stats de productos:', err.message);
+      console.error('❌ Error code:', err.code);
       console.error('❌ Stack trace:', err.stack);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ 
+        error: err.message,
+        details: err.code || 'Unknown error'
+      });
     }
   }
 };
