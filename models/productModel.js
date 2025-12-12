@@ -1,4 +1,3 @@
-@@ -1,110 +1,225 @@
 const pool = require('../config/db');
 
 const Product = {
@@ -124,6 +123,7 @@ const Product = {
     }
   }
 };
+
 
 
 

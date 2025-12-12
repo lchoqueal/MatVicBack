@@ -10,10 +10,16 @@ const clientRoutes = require('./routes/clientRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 const alertsRoutes = require('./routes/alertsRoutes');
 const cartRoutes = require('./routes/cartRoutes');
+
 const productController = require('./controllers/productController');
 const { startListener } = require('./services/dbListener');
 
+// Swagger
+const { swaggerUi, swaggerSpec } = require('./config/swagger');
+
 const app = express();
+// Documentación Swagger (debe ir después de inicializar app)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(cors({
   origin: [
     'http://localhost:5173',
