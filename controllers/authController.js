@@ -42,7 +42,7 @@ const authController = {
     }
   },
 
-  // --- REGISTRO CORREGIDO PARA TUS TABLAS ---
+ // --- REGISTRO ADAPTADO A TUS TABLAS REALES ---
   async register(req, res) {
     const { name_user, correo, contrasena } = req.body;
 
@@ -55,28 +55,29 @@ const authController = {
     try {
       await client.query('BEGIN');
 
-      // 1. Verificar duplicados
-      // Buscamos usuario por nombre en 'usuario' y correo en 'cliente'
-      // Esto requiere dos consultas o un JOIN, haremos lo simple primero:
+      // 1. VERIFICACIÓN (Separada para no dar error de columna inexistente)
       
+      // A) Buscamos solo el nombre en tabla USUARIO
       const checkUser = await client.query('SELECT * FROM usuario WHERE name_user = $1', [name_user]);
       if (checkUser.rows.length > 0) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'El nombre de usuario ya está en uso.' });
+        return res.status(400).json({ error: 'El nombre de usuario ya está ocupado.' });
       }
 
-      // Verificamos correo en la tabla CLIENTE (donde sí existe la columna)
+      // B) Buscamos el correo en tabla CLIENTE (¡Aquí sí existe la columna!)
       const checkMail = await client.query('SELECT * FROM cliente WHERE correo = $1', [correo]);
       if (checkMail.rows.length > 0) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'El correo ya está registrado.' });
+        return res.status(400).json({ error: 'Este correo ya está registrado.' });
       }
 
-      // 2. Encriptar
-      const hashedPassword = await bcrypt.hash(contrasena, 10);
+      // 2. ENCRIPTAR CONTRASEÑA
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(contrasena, saltRounds);
 
-      // 3. Insertar en USUARIO
-      // ⚠️ CORRECCIÓN: Quitamos 'correo' y 'rol' de aquí porque NO existen en tu tabla usuario
+      // 3. INSERTAR EN 'USUARIO' 
+      // ⚠️ IMPORTANTE: Aquí NO ponemos 'correo' ni 'rol' porque tus tablas no los tienen.
+      // Solo llenamos: name_user, contrasena y estado.
       const userRes = await client.query(`
         INSERT INTO usuario (name_user, contrasena, estado) 
         VALUES ($1, $2, 'activo') 
@@ -85,8 +86,8 @@ const authController = {
       
       const newUser = userRes.rows[0];
 
-      // 4. Insertar en CLIENTE
-      // ⚠️ CORRECCIÓN: Aquí SÍ insertamos el correo
+      // 4. INSERTAR EN 'CLIENTE'
+      // ✅ AQUÍ SÍ guardamos el correo.
       await client.query(`
         INSERT INTO cliente (id_usuario_cliente, correo, estado) 
         VALUES ($1, $2, 'activo')
@@ -101,12 +102,11 @@ const authController = {
 
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Error en registro:', err.message);
+      console.error('❌ Error Base de Datos:', err.message);
       res.status(500).json({ error: 'Error interno: ' + err.message });
     } finally {
       client.release();
     }
   }
-};
 
 module.exports = authController;
